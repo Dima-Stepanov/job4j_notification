@@ -1,6 +1,5 @@
 package ru.job4j.notification.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -23,9 +22,8 @@ import ru.job4j.notification.mapper.MessageMapper;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class KafkaNotificationOrderService implements KafkaService<String, String, OrderDTO> {
+public class KafkaNotificationOrderService implements KafkaService<String, OrderDTO, OrderDTO> {
     private static final String TOPIC_NOTIFICATION = "job4j_notifications";
-    private final ObjectMapper objectMapper;
     private final SimpleMessageOrderService service;
     private final MessageMapper mapper;
 
@@ -43,17 +41,11 @@ public class KafkaNotificationOrderService implements KafkaService<String, Strin
      */
     @KafkaListener(topics = TOPIC_NOTIFICATION)
     @Override
-    public OrderDTO receive(ConsumerRecord<String, String> record) {
+    public OrderDTO receive(ConsumerRecord<String, OrderDTO> record) {
         log.debug("KAFKA PARTITION {}", record.partition());
         log.debug("KAFKA KEY {}", record.key());
         log.debug("KAFKA VALUE {}", record.value());
-        OrderDTO orderDTO;
-        try {
-            orderDTO = objectMapper.readValue(record.value(), OrderDTO.class);
-            log.debug("PARTITION {}", orderDTO.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        OrderDTO orderDTO = record.value();
         service.create(mapper.getMessageOrderByOrderDTO(orderDTO));
         return orderDTO;
     }
